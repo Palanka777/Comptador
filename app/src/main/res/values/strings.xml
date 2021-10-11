@@ -2,4 +2,6 @@
     <string name="app_name">Comptador</string>
     <string name="toucheMe">Tocam</string>
     <string name="timeText">Temps disponible:%1$d</string>
+    <string name="endGame">Temps acabat!</string>
+    <string name="restartGame">Has fet : %1$d clicks</string>
 </resources>
