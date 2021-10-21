@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     internal var appStarted=false
     internal  lateinit var countDownTimer : CountDownTimer
-    internal val initialCountDownTimer:Long=10000
+    internal val initialCountDownTimer:Long= time.toLong() * 1000
     internal val intervalCountDownTimer:Long=1000
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,9 +35,6 @@ class MainActivity : AppCompatActivity() {
         tapMeButton = findViewById(R.id.tapMeButton)
         timeTextView = findViewById(R.id.timeTextView)
         counterTextView = findViewById(R.id.counterTextView)
-
-
-
 
 
         tapMeButton.setOnClickListener{
@@ -69,13 +66,12 @@ class MainActivity : AppCompatActivity() {
         appStarted = true
     }
     private fun endGame(){
-        Toast.makeText(this, getString(R.string.endGame), Toast.LENGTH_LONG).show()
+        Toast.makeText(this,getString(R.string.restartGame,counter)+" "+getString(R.string.endGame),  Toast.LENGTH_LONG).show()
         restartGame()
     }
 
     private fun restartGame() {
         appStarted=false
-        Toast.makeText(this,getString(R.string.restartGame,counter),  Toast.LENGTH_LONG).show()
         counter=0
         timeTextView.text=getString(R.string.timeText,time)
         counterTextView.text=counter.toString()
