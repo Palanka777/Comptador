@@ -1,87 +1,165 @@
+
+/*
+ * Copyright (c) 2020 Razeware LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
+ * distribute, sublicense, create a derivative work, and/or sell copies of the
+ * Software in any work that is designed, intended, or marketed for pedagogical or
+ * instructional purposes related to programming, coding, application development,
+ * or information technology.  Permission for such use, copying, modification,
+ * merger, publication, distribution, sublicensing, creation of derivative works,
+ * or sale is expressly withheld.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package me.davidpont.dam.comptador
 
-import android.content.IntentSender
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = MainActivity::class.java.simpleName
+    private var score = 0
 
-    internal lateinit var tapMeButton : Button
-    internal lateinit var timeTextView : TextView
-    internal lateinit var counterTextView: TextView
-    internal var counter=0;
-    internal var time= 10;
+    private var gameStarted = false
+    private lateinit var countDownTimer: CountDownTimer
+    private var initialCountDown: Long = 60000
+    private var countDownInterval: Long = 1000
 
-    internal var appStarted=false
-    internal  lateinit var countDownTimer : CountDownTimer
-    internal val initialCountDownTimer:Long= time.toLong() * 1000
-    internal val intervalCountDownTimer:Long=1000
+    private lateinit var tapMeButton: Button
+    private lateinit var gameScoreTextView: TextView
+    private lateinit var timeLeftTextView: TextView
+    private var timeLeftOnTimer: Long = 60000
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d(TAG,"Hola mon! oncreate")
-        Log.d(TAG, counter.toString())
-        Log.d(TAG, time.toString())
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        initCountDown()
-
-        tapMeButton = findViewById(R.id.tapMeButton)
-        timeTextView = findViewById(R.id.timeTextView)
-        counterTextView = findViewById(R.id.counterTextView)
-
-
-        tapMeButton.setOnClickListener{
-            if (!appStarted){
-                startGame()
-
-            }
-            incrementCounter()
-
-        }
-        timeTextView.text=getString(R.string.timeText,time)
+    companion object {
+        private val TAG = MainActivity::class.java.simpleName
+        private const val KEY_SCORE = "KEY_SCORE"
+        private const val KEY_TIME_LEFT = "KEY_TIME_LEFT"
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        Log.d(TAG, "onCreate called. Score is $score")
 
-    private fun initCountDown(){
-        countDownTimer=object :CountDownTimer(initialCountDownTimer,intervalCountDownTimer){
+        tapMeButton = findViewById(R.id.tapMeButton)
+        gameScoreTextView = findViewById(R.id.gameScoreTextView)
+        timeLeftTextView = findViewById(R.id.timeLeftTextView)
+
+        tapMeButton.setOnClickListener { view ->
+            incrementScore()
+        }
+
+        if (savedInstanceState != null) {
+            score = savedInstanceState.getInt(KEY_SCORE)
+            timeLeftOnTimer = savedInstanceState.getLong(KEY_TIME_LEFT)
+            restoreGame()
+        } else {
+            resetGame()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt(KEY_SCORE, score)
+        outState.putLong(KEY_TIME_LEFT, timeLeftOnTimer)
+        countDownTimer.cancel()
+
+        Log.d(TAG, "onSaveInstanceState: Saving Score: $score & Time Left: $timeLeftOnTimer")
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        Log.d(TAG, "onDestroy called.")
+        super.onDestroy()
+    }
+
+    private fun resetGame() {
+        score = 0
+
+        gameScoreTextView.text = getString(R.string.yourScore, score)
+
+        val initialTimeLeft = initialCountDown / 1000
+        timeLeftTextView.text = getString(R.string.timeLeft, initialTimeLeft)
+
+        countDownTimer = object : CountDownTimer(initialCountDown, countDownInterval) {
             override fun onTick(millisUntilFinished: Long) {
-                val TimeLeft =millisUntilFinished / 1000
-                timeTextView.text = TimeLeft.toString()
+                timeLeftOnTimer = millisUntilFinished
+
+                val timeLeft = millisUntilFinished / 1000
+                timeLeftTextView.text = getString(R.string.timeLeft, timeLeft)
             }
 
             override fun onFinish() {
                 endGame()
             }
         }
+
+        gameStarted = false
     }
+
+    private fun restoreGame() {
+        gameScoreTextView.text = getString(R.string.yourScore, score)
+        val restoredTime = timeLeftOnTimer / 1000
+        timeLeftTextView.text = getString(R.string.timeLeft, restoredTime)
+
+        countDownTimer = object : CountDownTimer(timeLeftOnTimer, countDownInterval) {
+            override fun onTick(millisUntilFinished: Long) {
+                timeLeftOnTimer = millisUntilFinished
+
+                val timeLeft = millisUntilFinished / 1000
+                timeLeftTextView.text = getString(R.string.timeLeft, timeLeft)
+            }
+
+            override fun onFinish() {
+                endGame()
+            }
+        }
+
+        countDownTimer.start()
+        gameStarted = true
+    }
+
     private fun startGame() {
         countDownTimer.start()
-        appStarted = true
-    }
-    private fun endGame(){
-        Toast.makeText(this,getString(R.string.restartGame,counter)+" "+getString(R.string.endGame),  Toast.LENGTH_LONG).show()
-        restartGame()
+        gameStarted = true
     }
 
-    private fun restartGame() {
-        appStarted=false
-        counter=0
-        timeTextView.text=getString(R.string.timeText,time)
-        counterTextView.text=counter.toString()
+    private fun incrementScore() {
+        if (!gameStarted) {
+            startGame()
+        }
 
-    }
-    private fun incrementCounter(){
+        score += 1
 
-        counter++
-        counterTextView.text = counter.toString()
-
+        val newScore = getString(R.string.yourScore, score)
+        gameScoreTextView.text = newScore
     }
 
+    private fun endGame() {
+        Toast.makeText(this, getString(R.string.gameOverMessage, score), Toast.LENGTH_LONG).show()
+
+        resetGame()
+    }
 }
